@@ -48,6 +48,10 @@ Before any change that touches the guest, the protocol or the extension:
   ```
   It exercises every operation read-write, remounts, and checks the volume with
   `ntfsfix -n`. It must end with `SELFTEST PASSED`.
+- **Stress test.** On a fresh 1 GB image, `ntfsb ... stress 96` writes, reads
+  back and syncs six files in parallel, and fails if I/O stalls for 60 seconds.
+  It must end with `STRESS PASSED`. Run it for any change to `BridgeClient`,
+  `NBDServer` or the guest's I/O paths.
 - **Real drive test.** Install the app and copy, rename and delete files on a
   spare NTFS drive in Finder, then eject it. Use a drive with nothing you need.
   If you can, check it afterwards in Windows with `chkdsk X:`.

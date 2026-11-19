@@ -1,7 +1,7 @@
 #!/bin/bash
 # Packages a notarized NTFS Bridge.app into a drag-to-install disk image
-# (built with dmgbuild, so Finder is not needed), notarizes the image and
-# staples the ticket to it.
+# (built with dmgbuild, so Finder is not needed), signs it with Developer ID,
+# notarizes it and staples the ticket to it.
 #
 #   tools/make-dmg.sh path/to/NTFS\ Bridge.app [output-dir]
 #
@@ -51,6 +51,19 @@ cp "$root"/LICENSES/*.txt "$lic/"
 rm -f "$dmg"
 "$dmgbuild" -s "$root/tools/dmg-settings.py" -D app="$app" -D licenses="$lic" "$name" "$dmg"
 
+# Sign the image itself with the Developer ID Application certificate, which must
+# be in the keychain (Xcode › Settings › Accounts › Manage Certificates).
+# SIGN_IDENTITY picks one when there are several.
+if [[ -z "${SKIP_NOTARIZE:-}" ]]; then
+  identity="${SIGN_IDENTITY:-$(security find-identity -v -p codesigning |
+    awk -F'"' '/Developer ID Application/ {print $2; exit}')}"
+  [[ -n "$identity" ]] || {
+    echo "no Developer ID Application certificate in the keychain" >&2
+    exit 1
+  }
+  codesign --sign "$identity" --timestamp "$dmg"
+fi
+
 if [[ -z "${SKIP_NOTARIZE:-}" ]]; then
   if [[ -n "${NOTARY_PROFILE:-}" ]]; then
     creds=(--keychain-profile "$NOTARY_PROFILE")
@@ -61,6 +74,7 @@ if [[ -z "${SKIP_NOTARIZE:-}" ]]; then
   xcrun notarytool submit "$dmg" "${creds[@]}" --wait
   xcrun stapler staple "$dmg"
   xcrun stapler validate "$dmg"
+  spctl -a -t open --context context:primary-signature -vv "$dmg"
 fi
 
 (cd "$out" && shasum -a 256 "$(basename "$dmg")" >"$(basename "$dmg").sha256")

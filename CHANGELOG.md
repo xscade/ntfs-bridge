@@ -21,7 +21,8 @@ The first public release.
   remount drives that another driver mounted first.
 - Mounting NTFS disk images (`.img`, `.dmg`).
 - Disk Utility First Aid support: verify runs `ntfsfix -n` and repair runs `ntfsfix`.
-- The `ntfsb` command-line tool for testing against disk images.
+- The `ntfsb` command-line tool for testing against disk images, including a
+  `stress` command that fails if I/O stalls.
 - A Developer ID signed and notarized app, shipped as a notarized disk image.
 
 [Unreleased]: https://github.com/xscade/ntfs-bridge/compare/v0.1.0...HEAD

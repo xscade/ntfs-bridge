@@ -50,10 +50,16 @@ public struct MountInfo: Sendable {
 
 /// Request/response client for the guest agent. Calls may run concurrently;
 /// replies are matched to callers by request id.
+///
+/// `lock` guards the pending table and `sendLock` only orders frames on the
+/// socket. The reader must never wait for a sender: a send can block until the
+/// guest drains its side, and the guest only drains it while its replies are
+/// being read. Sharing one lock deadlocks both under load.
 public final class BridgeClient: @unchecked Sendable {
     private let fd: Int32
     private let keepAlive: AnyObject?
     private let lock = NSLock()
+    private let sendLock = NSLock()
     private var nextID: UInt64 = 1
     private var pending: [UInt64: CheckedContinuation<Data, Error>] = [:]
     private var closed = false
@@ -79,13 +85,15 @@ public final class BridgeClient: @unchecked Sendable {
             let id = nextID
             nextID += 1
             pending[id] = cont
+            lock.unlock()
             var frame = WireWriter()
             frame.u32(UInt32(body.data.count))
             frame.u64(id)
             frame.u8(op.rawValue)
             frame.data.append(body.data)
+            sendLock.lock()
             let ok = writeAll(frame.data)
-            lock.unlock()
+            sendLock.unlock()
             if !ok { fail(id) }
         }
         return WireReader(reply)

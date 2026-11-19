@@ -13,6 +13,7 @@ usage: ntfsb --guest DIR IMAGE COMMAND
   put NAME TEXT  write a file at the root
   crash          write, then stop the guest without unmounting
   bench PATH [CHUNK]  time reading a file
+  stress [MB]    parallel large writes, reads and syncs; fails if I/O stalls
 """
 
 struct Failure: Error, CustomStringConvertible {
@@ -159,6 +160,69 @@ func selftest(guest: URL, image: URL) async throws {
     print("SELFTEST PASSED")
 }
 
+/// Writes and reads several large files in parallel with periodic syncs: the
+/// load that once deadlocked the NBD link. A watchdog fails the run if no
+/// operation completes for 60 seconds.
+func stress(guest: URL, image: URL, megabytes: Int) async throws {
+    let s = try await Session.boot(guest: guest, image: image, readOnly: false)
+    let info = try await s.client.mount(readOnly: false)
+    let client = s.client
+    let progress = Progress(totalUnitCount: 0)
+    let watchdog = Task.detached {
+        var last = Int64(-1)
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(60))
+            let now = progress.completedUnitCount
+            if now == last {
+                print("FAILED: no I/O completed for 60 s (deadlock)")
+                exit(2)
+            }
+            last = now
+        }
+    }
+    let chunk = 1 << 20
+    let files = 6
+    var inodes: [UInt64] = []
+    for i in 0..<files {
+        inodes.append(try await client.create(info.root.ino, "stress-\(i).bin", kind: .file, mode: 0o644).ino)
+    }
+    let start = ContinuousClock.now
+    try await withThrowingTaskGroup(of: Void.self) { group in
+        for (i, ino) in inodes.enumerated() {
+            group.addTask {
+                let data = Data(repeating: UInt8(i + 1), count: chunk)
+                for n in 0..<megabytes {
+                    _ = try await client.write(ino, offset: UInt64(n * chunk), data: data)
+                    progress.completedUnitCount += 1
+                    // Read back what an earlier pass wrote, so reads and writes overlap.
+                    if n > 0 {
+                        let back = try await client.read(ino, offset: UInt64((n - 1) * chunk), length: UInt32(chunk))
+                        try expectQuiet(back.count == chunk && back.allSatisfy { $0 == UInt8(i + 1) },
+                                        "file \(i) block \(n - 1) reads back")
+                        progress.completedUnitCount += 1
+                    }
+                    if n % 16 == 15 {
+                        try await client.sync()
+                        progress.completedUnitCount += 1
+                    }
+                }
+            }
+        }
+        try await group.waitForAll()
+    }
+    try await client.sync()
+    let secs = (ContinuousClock.now - start) / .seconds(1)
+    print(String(format: "wrote and verified %d MB in %.1fs", files * megabytes, secs))
+    for i in 0..<files { try await client.remove(info.root.ino, "stress-\(i).bin", isDirectory: false) }
+    watchdog.cancel()
+    try await s.shutdown()
+    print("STRESS PASSED")
+}
+
+func expectQuiet(_ ok: Bool, _ what: String) throws {
+    if !ok { throw Failure(description: "FAILED: \(what)") }
+}
+
 func run() async throws {
     var args = Array(CommandLine.arguments.dropFirst())
     guard args.count >= 4, args[0] == "--guest" else { throw Failure(description: usage) }
@@ -247,6 +311,8 @@ func run() async throws {
         let secs = (ContinuousClock.now - start) / .seconds(1)
         print(String(format: "read %.0f MB in %.2fs = %.1f MB/s (chunk %u)", Double(off) / 1e6, secs, Double(off) / 1e6 / secs, chunk))
         try await s.shutdown()
+    case "stress":
+        try await stress(guest: guest, image: image, megabytes: Int(args.first ?? "") ?? 96)
     default:
         throw Failure(description: usage)
     }
