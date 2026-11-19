@@ -45,6 +45,17 @@ security. Plug in a Windows drive and it appears in Finder, ready to use.
 
 ## Install
 
+### With Homebrew
+
+```bash
+brew install --cask xscade/tap/ntfs-bridge
+```
+
+Update later with `brew upgrade --cask ntfs-bridge`. Then turn on the extension
+(step 4 below).
+
+### From the disk image
+
 1. Download `NTFS-Bridge-0.1.0.dmg` from the
    [latest release](https://github.com/xscade/ntfs-bridge/releases/latest).
 2. Open the disk image and drag **NTFS Bridge** into **Applications**.

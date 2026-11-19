@@ -71,3 +71,16 @@ gh release create v<version> --title "NTFS Bridge <version>" --notes-file <notes
 
 Then download the disk image from the release page and open it on a Mac to check
 that Gatekeeper accepts it.
+
+## 6. Update the Homebrew cask
+
+The cask lives in [xscade/homebrew-tap](https://github.com/xscade/homebrew-tap).
+Set the new `version` and the `sha256` from the `.sha256` file in
+`Casks/ntfs-bridge.rb`, then check and push it:
+
+```bash
+cd path/to/homebrew-tap
+brew style Casks/ntfs-bridge.rb
+brew audit --cask --online --strict xscade/tap/ntfs-bridge
+git commit -am "ntfs-bridge <version>" && git push
+```
