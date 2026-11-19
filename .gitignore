@@ -1,0 +1,20 @@
+# Build output: guest image, Xcode products, disk images, caches
+/build/
+host/.build/
+host/.swiftpm/
+*.dmg
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Signing material must never be committed
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+
+# macOS
+.DS_Store

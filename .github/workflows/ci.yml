@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  guest:
+    name: Guest agent (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: guest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: guest/go.mod
+          cache-dependency-path: guest/go.sum
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - name: go vet
+        run: GOOS=linux GOARCH=arm64 go vet ./...
+      - name: build
+        run: GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -o /dev/null .

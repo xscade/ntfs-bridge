@@ -1,0 +1,49 @@
+name: NTFSBridge
+options:
+  bundleIdPrefix: com.ravi
+  deploymentTarget:
+    macOS: "26.4"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ${NTFSB_TEAM}
+    ENABLE_HARDENED_RUNTIME: YES
+targets:
+  NTFSBridge:
+    type: application
+    platform: macOS
+    sources: [App, Shared]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ravi.NTFSBridge
+        PRODUCT_NAME: NTFS Bridge
+        CODE_SIGN_ENTITLEMENTS: App/App.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: NTFS Bridge
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: NTFSBridgeFS
+        embed: true
+        codeSign: true
+  NTFSBridgeFS:
+    type: extensionkit-extension
+    platform: macOS
+    sources:
+      - Extension
+      - Shared
+      - path: ../host/Sources/NTFSBridgeCore
+        group: Core
+      - path: ../build/guest/Image
+        buildPhase: resources
+      - path: ../build/guest/initrd.gz
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ravi.NTFSBridge.FS
+        PRODUCT_NAME: NTFSBridgeFS
+        CODE_SIGN_ENTITLEMENTS: Extension/Extension.entitlements
+        INFOPLIST_FILE: Extension/Info.plist

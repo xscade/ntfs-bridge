@@ -1,0 +1,55 @@
+name: Bug report
+description: Something doesn't work, or a drive behaved unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. If you think a drive was damaged, stop using it and don't run repairs yet.
+        Security problems go through the [security policy](https://github.com/xscade/ntfs-bridge/security/policy), not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: NTFS Bridge version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version and Mac model
+      placeholder: "macOS 26.4, MacBook Air M3"
+    validations:
+      required: true
+  - type: dropdown
+    id: state
+    attributes:
+      label: What does the menu bar show for the drive?
+      options:
+        - Read & write
+        - Read-only (note below)
+        - Mounted by another driver
+        - The drive isn't listed
+    validations:
+      required: true
+  - type: textarea
+    id: drive
+    attributes:
+      label: About the drive
+      description: Size, connection (USB, Thunderbolt, SD card), and how it was last used in Windows (shut down, hibernated, Fast Startup).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Output of:
+        `log show --last 10m --predicate 'subsystem BEGINSWITH "com.ravi.NTFSBridge"' --info`
+        Remove any file names you'd rather not share.
+      render: text

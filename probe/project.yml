@@ -1,0 +1,22 @@
+name: FSKitProbe
+options:
+  bundleIdPrefix: com.ravi
+  deploymentTarget:
+    macOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: YBR22TF7H3
+    ENABLE_HARDENED_RUNTIME: YES
+targets:
+  FSKitProbe:
+    type: application
+    platform: macOS
+    sources: [Probe]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ravi.NTFSBridge.Probe
+        PRODUCT_NAME: FSKitProbe
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
