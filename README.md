@@ -21,11 +21,6 @@ macOS can read NTFS drives but not write to them. NTFS Bridge adds full read and
 write support without a kernel extension and without turning off any macOS
 security. Plug in a Windows drive and it appears in Finder, ready to use.
 
-> [!WARNING]
-> NTFS Bridge is **early software (0.1.0)**. It has been tested on real drives, but
-> keep a backup of anything you can't afford to lose, and always eject a drive
-> before unplugging it.
-
 ## Features
 
 - **Read and write** NTFS drives in Finder and every other app.
